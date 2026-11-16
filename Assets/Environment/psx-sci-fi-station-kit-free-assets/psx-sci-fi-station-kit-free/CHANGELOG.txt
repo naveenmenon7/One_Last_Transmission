@@ -1,0 +1,5 @@
+PSX Sci-Fi Station Kit Free - Space Kit Sampler: changes, newest first
+
+1.0.5 (14 Nov 2026)
+- The corner post stands 1.5 cm proud of the walls it meets and just over their tops, so no face of
+  it lies in a wall's and flickers.
