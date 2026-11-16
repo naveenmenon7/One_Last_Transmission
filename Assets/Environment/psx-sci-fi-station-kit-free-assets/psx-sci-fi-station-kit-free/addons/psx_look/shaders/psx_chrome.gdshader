@@ -1,5 +1,0 @@
-shader_type spatial;
-render_mode vertex_lighting, specular_disabled;
-
-#define PSX_CHROME
-#include "res://addons/psx_look/shaders/psx.gdshaderinc"
