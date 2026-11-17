@@ -37,6 +37,8 @@ public class FirstPersonController : MonoBehaviour
     private float _cameraPitch;
     private float _bobTimer;
 
+    private bool _isTabletInteractionMode;
+
     private void Awake()
     {
         _characterController = GetComponent<CharacterController>();
@@ -46,15 +48,47 @@ public class FirstPersonController : MonoBehaviour
     {
         _cameraInitialPosition = _cameraTransform.localPosition;
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        SetTabletInteractionMode(false);
     }
 
     private void Update()
     {
+        HandleTabletInput();
+
+        if (_isTabletInteractionMode)
+        {
+            _horizontalVelocity = Vector3.zero;
+            HandleCameraBob();
+            return;
+        }
+
         HandleMouseLook();
         HandleMovement();
         HandleCameraBob();
+    }
+
+    private void HandleTabletInput()
+    {
+        if (Keyboard.current == null)
+            return;
+
+        if (Keyboard.current.tabKey.wasPressedThisFrame)
+        {
+            SetTabletInteractionMode(!_isTabletInteractionMode);
+        }
+    }
+
+    private void SetTabletInteractionMode(bool enabled)
+    {
+        _isTabletInteractionMode = enabled;
+
+        Cursor.lockState = enabled
+            ? CursorLockMode.None
+            : CursorLockMode.Locked;
+
+        Cursor.visible = enabled;
+
+        _horizontalVelocity = Vector3.zero;
     }
 
     private void HandleMouseLook()
@@ -155,6 +189,7 @@ public class FirstPersonController : MonoBehaviour
     private void HandleCameraBob()
     {
         bool isMoving =
+            !_isTabletInteractionMode &&
             _characterController.isGrounded &&
             _horizontalVelocity.magnitude > 0.1f;
 

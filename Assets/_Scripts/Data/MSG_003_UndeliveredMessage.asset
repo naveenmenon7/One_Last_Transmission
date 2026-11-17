@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3dece24a13e9cf34eb2899809d97d6d1, type: 3}
+  m_Name: MSG_003_UndeliveredMessage
+  m_EditorClassIdentifier: Assembly-CSharp::ArchiveEntry
+  _entryID: MSG_003
+  _entryTitle: UNDELIVERED MESSAGE
+  _category: 1
+  _discoveryID: DISCOVERY_MSG_003
+  _metadata: 'MESSAGE ID: MSG_003
+
+    SOURCE: UNKNOWN
+
+    STATUS: UNDELIVERED
+
+    TIMESTAMP: UNKNOWN'
+  _dialogueText: 'No message content available.
+
+
+    The communication appears to have never reached its intended recipient.'
+  _voiceClip: {fileID: 0}
