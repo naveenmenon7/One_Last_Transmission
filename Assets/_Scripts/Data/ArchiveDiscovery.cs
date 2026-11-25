@@ -1,4 +1,3 @@
-
 using UnityEngine;
 
 public class ArchiveDiscovery : MonoBehaviour, IInteractable
@@ -7,6 +6,9 @@ public class ArchiveDiscovery : MonoBehaviour, IInteractable
     [SerializeField] private ArchiveManager _archiveManager;
     [SerializeField] private string _discoveryID;
     [SerializeField] private string _interactionPrompt = "E  —  INVESTIGATE";
+
+    [Header("Dialogue")]
+    [SerializeField] private DialogueManager _dialogueManager;
 
     public void Interact()
     {
@@ -23,6 +25,25 @@ public class ArchiveDiscovery : MonoBehaviour, IInteractable
         if (unlocked)
         {
             Debug.Log($"Discovered archive entry: {_discoveryID}");
+
+            ArchiveEntry entry =
+                _archiveManager.GetEntryByDiscoveryID(_discoveryID);
+
+            Debug.Log($"Archive Entry Found: {entry != null}");
+
+            Debug.Log($"Dialogue Manager Assigned: {_dialogueManager != null}");
+
+            if (entry != null && _dialogueManager != null)
+            {
+                Debug.Log("Starting dialogue...");
+                _dialogueManager.PlayDialogue(entry);
+            }
+            else
+            {
+                Debug.LogWarning(
+                    $"Archive Discovery: Missing ArchiveEntry or DialogueManager on {gameObject.name}."
+                );
+            }
         }
         else
         {

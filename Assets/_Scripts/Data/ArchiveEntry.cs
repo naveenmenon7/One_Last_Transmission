@@ -1,4 +1,3 @@
-
 using UnityEngine;
 
 public enum ArchiveCategory
@@ -23,6 +22,8 @@ public class ArchiveEntry : ScriptableObject
     [SerializeField] private string _discoveryID;
 
     [Header("Content")]
+    [SerializeField] private string _speakerName;
+
     [TextArea(3, 8)]
     [SerializeField] private string _metadata;
 
@@ -37,6 +38,7 @@ public class ArchiveEntry : ScriptableObject
     public string DiscoveryID => _discoveryID;
     public string Metadata => _metadata;
     public string DialogueText => _dialogueText;
+    public string SpeakerName => _speakerName;
     public AudioClip VoiceClip => _voiceClip;
     
 }

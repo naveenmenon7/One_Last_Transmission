@@ -1,4 +1,3 @@
-
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -65,6 +64,19 @@ public class ArchiveManager : MonoBehaviour
         {
             if (entry != null && entry.EntryID == entryID)
                 return entry;
+        }
+
+        return null;
+    }
+
+    public ArchiveEntry GetEntryByDiscoveryID(string discoveryID)
+    {
+        foreach (ArchiveEntry entry in _archiveEntries)
+        {
+            if (entry != null && entry.DiscoveryID == discoveryID)
+            {
+                return entry;
+            }
         }
 
         return null;
@@ -159,5 +171,14 @@ public class ArchiveManager : MonoBehaviour
         }
 
         _saveManager.SaveArchive(saveData);
+    }
+
+    [ContextMenu("TEST/Reset Archive Progress")]
+    private void ResetArchiveProgress()
+    {
+        _unlockedEntryIDs.Clear();
+        SaveUnlockedEntries();
+
+        Debug.Log("Archive progress reset.");
     }
 }

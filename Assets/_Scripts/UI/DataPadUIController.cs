@@ -1,4 +1,3 @@
-
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,6 +8,9 @@ public class DataPadUIController : MonoBehaviour
 {
     [Header("Archive System")]
     [SerializeField] private ArchiveManager _archiveManager;
+
+    [Header("Dialogue System")]
+    [SerializeField] private DialogueManager _dialogueManager;
 
     [Header("Main Screen")]
     [SerializeField] private GameObject _mainScreen;
@@ -52,6 +54,8 @@ public class DataPadUIController : MonoBehaviour
 
     private GameObject _currentListPanel;
     private List<ArchiveEntry> _currentEntries;
+
+    private ArchiveEntry _currentEntry;
 
     private UnityAction[] _recordingActions;
     private UnityAction[] _messageActions;
@@ -151,6 +155,8 @@ public class DataPadUIController : MonoBehaviour
 
         _recordingDetailsPanel.SetActive(false);
 
+        _currentEntry = null;
+
         _currentEntries = _archiveManager.GetEntriesByCategory(category);
 
         RefreshCategoryEntries(
@@ -214,6 +220,8 @@ public class DataPadUIController : MonoBehaviour
         if (!_archiveManager.IsEntryUnlocked(entry.EntryID))
             return;
 
+        _currentEntry = entry;
+
         _currentListPanel.SetActive(false);
         _recordingDetailsPanel.SetActive(true);
 
@@ -222,18 +230,39 @@ public class DataPadUIController : MonoBehaviour
 
         _recordingMetadata.text = entry.Metadata;
         _transcriptText.text = entry.DialogueText;
+
+        // Selecting an audio recording automatically plays its dialogue.
+        if (entry.Category == ArchiveCategory.AudioRecording)
+        {
+            if (_dialogueManager != null)
+            {
+                Debug.Log($"Playing recording: {entry.EntryID}");
+
+                _dialogueManager.PlayDialogue(entry);
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "DataPadUIController: DialogueManager is not assigned."
+                );
+            }
+        }
     }
 
     private void ReturnToList()
     {
         _recordingDetailsPanel.SetActive(false);
         _currentListPanel.SetActive(true);
+
+        _currentEntry = null;
     }
 
     private void ReturnToMainScreen()
     {
         _categoryScreen.SetActive(false);
         _mainScreen.SetActive(true);
+
+        _currentEntry = null;
     }
 
     private void HideAllLists()
@@ -247,9 +276,15 @@ public class DataPadUIController : MonoBehaviour
         Button[] buttons,
         UnityAction[] actions)
     {
+        if (buttons == null || actions == null)
+            return;
+
         for (int i = 0; i < buttons.Length; i++)
         {
-            buttons[i].onClick.RemoveListener(actions[i]);
+            if (buttons[i] != null && i < actions.Length)
+            {
+                buttons[i].onClick.RemoveListener(actions[i]);
+            }
         }
     }
 

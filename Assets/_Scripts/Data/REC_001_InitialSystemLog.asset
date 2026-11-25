@@ -16,6 +16,7 @@ MonoBehaviour:
   _entryTitle: INITIAL SYSTEM LOG
   _category: 0
   _discoveryID: DISCOVERY_REC_001
+  _speakerName: FACILITY SYSTEM
   _metadata: 'RECORDING ID: REC_001
 
     SOURCE: FACILITY SYSTEM
