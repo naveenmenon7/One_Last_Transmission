@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -229,6 +228,16 @@ public class FirstPersonController : MonoBehaviour
             targetPosition,
             Time.deltaTime * _bobSmoothness
         );
+    }
+
+    public void ResetMovement()
+    {
+        _horizontalVelocity = Vector3.zero;
+        _verticalVelocity = Vector3.zero;
+
+        _bobTimer = 0f;
+
+        _cameraTransform.localPosition = _cameraInitialPosition;
     }
 
     private void OnDisable()
