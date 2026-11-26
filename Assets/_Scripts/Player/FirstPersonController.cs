@@ -28,6 +28,7 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] private float _bobSmoothness = 8f;
 
     private CharacterController _characterController;
+    private bool _isMovementLocked;
 
     private Vector3 _horizontalVelocity;
     private Vector3 _verticalVelocity;
@@ -53,6 +54,13 @@ public class FirstPersonController : MonoBehaviour
     private void Update()
     {
         HandleTabletInput();
+
+        if (_isMovementLocked)
+        {
+            _horizontalVelocity = Vector3.zero;
+            HandleCameraBob();
+            return;
+        }
 
         if (_isTabletInteractionMode)
         {
@@ -244,5 +252,16 @@ public class FirstPersonController : MonoBehaviour
     {
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+    }
+
+    public void SetMovementLocked(bool isLocked)
+    {
+        _isMovementLocked = isLocked;
+
+        if (isLocked)
+        {
+            _horizontalVelocity = Vector3.zero;
+            _verticalVelocity = Vector3.zero;
+        }
     }
 }

@@ -18,6 +18,8 @@ public class HazardFloor : MonoBehaviour
         if (!other.CompareTag("Player"))
             return;
 
+            Debug.Log("ENTERED HAZARD: " + gameObject.name);
+
         if (_hazardManager == null)
         {
             Debug.LogWarning(
@@ -26,7 +28,10 @@ public class HazardFloor : MonoBehaviour
             return;
         }
 
-        _hazardManager.TriggerHazard(_countdownDuration);
+        _hazardManager.EnterHazardFloor(
+            this,
+            _countdownDuration
+        );
     }
 
     private void OnTriggerExit(Collider other)
@@ -37,6 +42,6 @@ public class HazardFloor : MonoBehaviour
         if (_hazardManager == null)
             return;
 
-        _hazardManager.CancelHazard();
+        _hazardManager.ExitHazardFloor(this);
     }
 }

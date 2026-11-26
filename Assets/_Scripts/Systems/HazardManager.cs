@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -22,10 +23,16 @@ public class HazardManager : MonoBehaviour
     [Header("Hazard Settings")]
     [SerializeField] private float _defaultCountdownDuration = 5f;
 
+    [SerializeField] private float _respawnMovementDelay = 1.5f;
+
     private Coroutine _hazardCoroutine;
     private bool _isHazardActive;
-
     public bool IsHazardActive => _isHazardActive;
+
+    private HashSet<HazardFloor> _activeHazardFloors =
+    new HashSet<HazardFloor>();
+
+    private Coroutine _exitCheckCoroutine;
 
     private void Awake()
     {
@@ -51,6 +58,8 @@ public class HazardManager : MonoBehaviour
 
     public void CancelHazard()
     {
+        Debug.Log("CancelHazard called. Active: " + _isHazardActive);
+        
         if (!_isHazardActive)
             return;
 
@@ -64,9 +73,14 @@ public class HazardManager : MonoBehaviour
         _hazardCoroutine = StartCoroutine(FadeOutAndHide());
     }
 
+    
     private IEnumerator HazardCountdown(float duration)
     {
+        _isHazardActive = true;
+
         _countdownPanel.SetActive(true);
+
+        _countdownText.text = Mathf.CeilToInt(duration).ToString("00");
 
         yield return FadePanel(1f);
 
@@ -95,6 +109,8 @@ public class HazardManager : MonoBehaviour
 
     private void RespawnPlayer()
     {
+        _firstPersonController.SetMovementLocked(true);
+
         _characterController.enabled = false;
 
         _player.SetPositionAndRotation(
@@ -104,10 +120,16 @@ public class HazardManager : MonoBehaviour
 
         _characterController.enabled = true;
 
-        if (_firstPersonController != null)
-        {
-            _firstPersonController.ResetMovement();
-        }
+        _firstPersonController.ResetMovement();
+
+        StartCoroutine(UnlockPlayerMovement());
+    }
+
+    private IEnumerator UnlockPlayerMovement()
+    {
+        yield return new WaitForSeconds(_respawnMovementDelay);
+
+        _firstPersonController.SetMovementLocked(false);
     }
 
     private IEnumerator FadePanel(float targetAlpha)
@@ -139,5 +161,65 @@ public class HazardManager : MonoBehaviour
 
         _countdownPanel.SetActive(false);
         _hazardCoroutine = null;
+    }
+
+    public void EnterHazardFloor(
+    HazardFloor hazardFloor,
+    float countdownDuration)
+    {
+        _activeHazardFloors.Add(hazardFloor);
+
+        // Cancel a pending exit check if we entered another hazard tile.
+        if (_exitCheckCoroutine != null)
+        {
+            StopCoroutine(_exitCheckCoroutine);
+            _exitCheckCoroutine = null;
+        }
+
+        // Start countdown only when entering the first hazard tile.
+        if (!_isHazardActive)
+        {
+            _hazardCoroutine = StartCoroutine(
+                HazardCountdown(countdownDuration)
+            );
+        }
+    }
+
+    public void ExitHazardFloor(HazardFloor hazardFloor)
+    {
+        _activeHazardFloors.Remove(hazardFloor);
+
+        Debug.Log(
+            $"Exited: {hazardFloor.name} | Remaining hazard floors: {_activeHazardFloors.Count}"
+        );
+
+        if (_activeHazardFloors.Count == 0)
+        {
+            if (_exitCheckCoroutine != null)
+                StopCoroutine(_exitCheckCoroutine);
+
+            _exitCheckCoroutine = StartCoroutine(
+                CheckForHazardExit()
+            );
+        }
+    }
+
+    private IEnumerator CheckForHazardExit()
+    {
+        yield return new WaitForSeconds(0.1f);
+
+        _exitCheckCoroutine = null;
+
+        Debug.Log(
+            "Hazard exit check. Remaining floors: " +
+            _activeHazardFloors.Count
+        );
+
+        if (_activeHazardFloors.Count == 0)
+        {
+            Debug.Log("No hazard floors occupied. Cancelling countdown.");
+
+            CancelHazard();
+        }
     }
 }
