@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -6,6 +7,7 @@ public class FirstPersonController : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private Transform _cameraTransform;
+    [SerializeField] private Camera _camera;
 
     [Header("Movement")]
     [SerializeField] private float _walkSpeed = 4f;
@@ -27,42 +29,52 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] private float _sprintBobAmplitude = 0.045f;
     [SerializeField] private float _bobSmoothness = 8f;
 
+    [Header("DataPad Camera Zoom")]
+    [SerializeField] private float _tabletFieldOfView = 45f;
+    [SerializeField] private float _zoomDuration = 0.35f;
+    [SerializeField] private float _tabletHorizontalShift = -0.15f;
+    [SerializeField] private float _tabletVerticalShift = -0.08f;
+
     private CharacterController _characterController;
+    private Coroutine _tabletZoomCoroutine;
+
     private bool _isMovementLocked;
+    private bool _isTabletInteractionMode;
+    private bool _isTransitioning;
 
     private Vector3 _horizontalVelocity;
     private Vector3 _verticalVelocity;
     private Vector3 _cameraInitialPosition;
 
+    private float _normalFieldOfView;
     private float _cameraPitch;
     private float _bobTimer;
-
-    private bool _isTabletInteractionMode;
 
     private void Awake()
     {
         _characterController = GetComponent<CharacterController>();
+
+        if (_camera == null && _cameraTransform != null)
+        {
+            _camera = _cameraTransform.GetComponent<Camera>();
+        }
     }
 
     private void Start()
     {
         _cameraInitialPosition = _cameraTransform.localPosition;
+        _normalFieldOfView = _camera.fieldOfView;
 
-        SetTabletInteractionMode(false);
+        SetCursorState(false);
     }
 
     private void Update()
     {
         HandleTabletInput();
 
-        if (_isMovementLocked)
-        {
-            _horizontalVelocity = Vector3.zero;
-            HandleCameraBob();
-            return;
-        }
-
-        if (_isTabletInteractionMode)
+        if (_isMovementLocked ||
+            _isTabletInteractionMode ||
+            _isTransitioning)
         {
             _horizontalVelocity = Vector3.zero;
             HandleCameraBob();
@@ -76,26 +88,149 @@ public class FirstPersonController : MonoBehaviour
 
     private void HandleTabletInput()
     {
-        if (Keyboard.current == null)
+        if (Keyboard.current == null || _isTransitioning)
             return;
 
         if (Keyboard.current.tabKey.wasPressedThisFrame)
         {
-            SetTabletInteractionMode(!_isTabletInteractionMode);
+            if (_isTabletInteractionMode)
+            {
+                CloseTablet();
+            }
+            else
+            {
+                OpenTablet();
+            }
         }
     }
 
-    private void SetTabletInteractionMode(bool enabled)
+    private void OpenTablet()
     {
-        _isTabletInteractionMode = enabled;
+        _isTabletInteractionMode = true;
+        _isTransitioning = true;
 
-        Cursor.lockState = enabled
+        SetCursorState(true);
+
+        _horizontalVelocity = Vector3.zero;
+
+        _tabletZoomCoroutine = StartCoroutine(
+            ZoomCamera(_tabletFieldOfView, false)
+        );
+    }
+
+    private void CloseTablet()
+    {
+        _isTransitioning = true;
+
+        // Lock the cursor immediately.
+        SetCursorState(false);
+
+        // Keep tablet mode active until zoom-out finishes.
+        _tabletZoomCoroutine = StartCoroutine(
+            ZoomCamera(_normalFieldOfView, true)
+        );
+    }
+
+    private IEnumerator ZoomCamera(float targetFieldOfView, bool closeAfterZoom)
+    {
+        float startingFieldOfView = _camera.fieldOfView;
+
+        float startingShift = closeAfterZoom
+            ? _tabletHorizontalShift
+            : 0f;
+
+        float targetShift = closeAfterZoom
+            ? 0f
+            : _tabletHorizontalShift;
+
+        float elapsedTime = 0f;
+
+        while (elapsedTime < _zoomDuration)
+        {
+            elapsedTime += Time.deltaTime;
+
+            float progress = Mathf.Clamp01(
+                elapsedTime / _zoomDuration
+            );
+
+            float smoothProgress = Mathf.SmoothStep(
+                0f, 1f, progress
+            );
+
+            float currentFOV = Mathf.Lerp(
+                startingFieldOfView,
+                targetFieldOfView,
+                smoothProgress
+            );
+
+            float currentShift = Mathf.Lerp(
+                startingShift,
+                targetShift,
+                smoothProgress
+            );
+
+            _camera.fieldOfView = currentFOV;
+
+            float currentVerticalShift = Mathf.Lerp(
+                closeAfterZoom ? _tabletVerticalShift : 0f,
+                closeAfterZoom ? 0f : _tabletVerticalShift,
+                smoothProgress
+            );
+
+            UpdateCameraProjection(
+                currentFOV,
+                currentShift,
+                currentVerticalShift
+            );
+
+            yield return null;
+        }
+
+        _camera.fieldOfView = targetFieldOfView;
+
+        if (closeAfterZoom)
+        {
+            _camera.ResetProjectionMatrix();
+            _isTabletInteractionMode = false;
+        }
+        else
+        {
+            UpdateCameraProjection(
+                targetFieldOfView,
+                _tabletHorizontalShift,
+                _tabletVerticalShift
+            );
+        }
+
+        _isTransitioning = false;
+        _tabletZoomCoroutine = null;
+    }
+
+    private void UpdateCameraProjection(
+        float fieldOfView,
+        float horizontalShift,
+        float verticalShift)
+    {
+        Matrix4x4 projection = Matrix4x4.Perspective(
+            fieldOfView,
+            _camera.aspect,
+            _camera.nearClipPlane,
+            _camera.farClipPlane
+        );
+
+        projection.m02 = horizontalShift;
+        projection.m12 = verticalShift;
+
+        _camera.projectionMatrix = projection;
+    }
+
+    private void SetCursorState(bool tabletMode)
+    {
+        Cursor.lockState = tabletMode
             ? CursorLockMode.None
             : CursorLockMode.Locked;
 
-        Cursor.visible = enabled;
-
-        _horizontalVelocity = Vector3.zero;
+        Cursor.visible = tabletMode;
     }
 
     private void HandleMouseLook()
@@ -248,12 +383,6 @@ public class FirstPersonController : MonoBehaviour
         _cameraTransform.localPosition = _cameraInitialPosition;
     }
 
-    private void OnDisable()
-    {
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-    }
-
     public void SetMovementLocked(bool isLocked)
     {
         _isMovementLocked = isLocked;
@@ -263,5 +392,18 @@ public class FirstPersonController : MonoBehaviour
             _horizontalVelocity = Vector3.zero;
             _verticalVelocity = Vector3.zero;
         }
+    }
+
+    private void OnDisable()
+    {
+        if (_tabletZoomCoroutine != null)
+        {
+            StopCoroutine(_tabletZoomCoroutine);
+            _tabletZoomCoroutine = null;
+        }
+
+        _isTransitioning = false;
+
+        SetCursorState(false);
     }
 }
